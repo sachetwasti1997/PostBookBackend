@@ -2,7 +2,9 @@ package com.sachet.postBook;
 
 import com.sachet.postBook.model.User;
 import com.sachet.postBook.repository.UserRepository;
+import org.aspectj.lang.annotation.Before;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +32,14 @@ public class UserControllerTest {
     private User createValidUser(){
         User user = new User();
         user.setUserName("test_user_name");
-        user.setLastName("test_last_name");
         user.setDisplayName("test_display_name");
+        user.setPassword("test_password");
         return user;
+    }
+
+    @BeforeEach
+    public void cleanUp(){
+        userRepository.deleteAll();
     }
 
     @Test

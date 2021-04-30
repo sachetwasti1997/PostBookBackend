@@ -7,8 +7,6 @@ public class User extends BaseEntity{
 
     @Column(name = "user_name")
     private String userName;
-    @Column(name = "last_name")
-    private String lastName;
     @Column(name = "display_name")
     private String displayName;
     @Column(name = "password")
@@ -23,14 +21,6 @@ public class User extends BaseEntity{
 
     public void setUserName(String userName) {
         this.userName = userName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
     }
 
     public String getDisplayName() {
