@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 public class UserControllerTest {
-    public static String API_USER = "/api/1.0/users";
+    public static String API_USER = "/api/1.0/users/save";
 
     @Autowired
     TestRestTemplate testRestTemplate;
