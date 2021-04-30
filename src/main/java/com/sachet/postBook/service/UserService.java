@@ -18,4 +18,8 @@ public interface UserService {
 
     User delete(User user);
 
+    void deleteAll();
+
+    long count();
+
 }
