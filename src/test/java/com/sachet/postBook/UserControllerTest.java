@@ -2,6 +2,7 @@ package com.sachet.postBook;
 
 import com.sachet.postBook.model.User;
 import com.sachet.postBook.repository.UserRepository;
+import com.sachet.postBook.service.UserService;
 import org.aspectj.lang.annotation.Before;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 @ExtendWith(SpringExtension.class)
@@ -27,7 +29,7 @@ public class UserControllerTest {
     TestRestTemplate testRestTemplate;
 
     @Autowired
-    UserRepository userRepository;
+    UserService userService;
 
     private User createValidUser(){
         User user = new User();
@@ -39,7 +41,7 @@ public class UserControllerTest {
 
     @BeforeEach
     public void cleanUp(){
-        userRepository.deleteAll();
+        userService.deleteAll();
     }
 
     @Test
@@ -55,7 +57,16 @@ public class UserControllerTest {
         User user = createValidUser();
 
         ResponseEntity<Object> response = testRestTemplate.postForEntity(API_USER, user, Object.class);
-        Assertions.assertEquals(userRepository.count(), 1);
+        Assertions.assertEquals(userService.count(), 1);
+    }
+
+    @Test
+    public void postUser_userValid_checkPasswordHashed(){
+        User user = createValidUser();
+        testRestTemplate.postForEntity(API_USER, user, Object.class);
+        List<User> users = userService.findAll();
+        User user1 = users.get(0);
+        Assertions.assertNotEquals(user1.getPassword(), user.getPassword());
     }
 
 }
