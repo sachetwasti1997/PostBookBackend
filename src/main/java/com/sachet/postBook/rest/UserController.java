@@ -18,7 +18,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/api/1.0/users")
+    @PostMapping("/api/1.0/users/save")
     void createUsers(@RequestBody User user){
         User userSaved = userService.save(user);
     }
