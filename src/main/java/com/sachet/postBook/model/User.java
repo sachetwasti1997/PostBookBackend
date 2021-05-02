@@ -9,6 +9,8 @@ public class User extends BaseEntity{
     private String userName;
     @Column(name = "display_name")
     private String displayName;
+    @Column(name = "email")
+    private String email;
     @Column(name = "password")
     private String password;
 
@@ -29,6 +31,14 @@ public class User extends BaseEntity{
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPassword() {

@@ -36,6 +36,7 @@ public class UserControllerTest {
         user.setUserName("test_user_name");
         user.setDisplayName("test_display_name");
         user.setPassword("test_password");
+        user.setEmail("test@gmail.com");
         return user;
     }
 
