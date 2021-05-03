@@ -1,5 +1,6 @@
 package com.sachet.postBook;
 
+import com.sachet.postBook.custom_error.ApiError;
 import com.sachet.postBook.model.User;
 import com.sachet.postBook.repository.UserRepository;
 import com.sachet.postBook.service.UserService;
@@ -47,7 +48,7 @@ public class UserControllerTest {
         userService.deleteAll();
     }
 
-    public <T> ResponseEntity<?> postSignUp(Object request, Class<T> response){
+    public <T> ResponseEntity<T> postSignUp(Object request, Class<T> response){
         return testRestTemplate.postForEntity(API_USER, request, response);
     }
 
@@ -65,6 +66,14 @@ public class UserControllerTest {
 
         ResponseEntity<?> response = postSignUp(user, Object.class);
         Assertions.assertEquals(userService.count(), 1);
+    }
+
+    @Test
+    public void postUser_whenUserIsInvalid_receiveApiError(){
+        User user = new User();
+        ResponseEntity<ApiError> responseEntity = postSignUp(user, ApiError.class);
+        System.out.println(responseEntity.getBody().getMessage());
+        Assertions.assertEquals(responseEntity.getBody().getValidationErrors().size(), 4);
     }
 
     @Test
@@ -185,6 +194,24 @@ public class UserControllerTest {
 
         ResponseEntity<?> response = postSignUp(user, Object.class);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    public void postUser_whenAnotherUserHasSameUsername_receiveBadRequest(){
+        userService.save(createValidUser());
+
+        User user = createValidUser();
+        ResponseEntity<?> response = postSignUp(user, Object.class);
+        Assertions.assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    public void postUser_userInvalid_emailInvalid(){
+        User user = createValidUser();
+        user.setEmail("sachetgmail.com");
+
+        ResponseEntity<?> response = postSignUp(user, Object.class);
+        Assertions.assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
     }
 
 }
