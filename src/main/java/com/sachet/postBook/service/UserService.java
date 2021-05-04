@@ -10,6 +10,8 @@ public interface UserService {
 
     User findUserById(Long id);
 
+    User findByEmail(String email);
+
     List<User> findAll();
 
     User update(Long id, User user);

@@ -1,8 +1,11 @@
 package com.sachet.postBook.custom_error;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Date;
 import java.util.Map;
 
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
 public class ApiError {
 
     private long timeStamp = new Date().getTime();
