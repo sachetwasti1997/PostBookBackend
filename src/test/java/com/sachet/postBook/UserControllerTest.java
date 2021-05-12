@@ -1,10 +1,10 @@
 package com.sachet.postBook;
 
 import com.sachet.postBook.custom_error.ApiError;
+import com.sachet.postBook.model.AuthenticationResponse;
+import com.sachet.postBook.model.MyUserDetails;
 import com.sachet.postBook.model.User;
-import com.sachet.postBook.repository.UserRepository;
-import com.sachet.postBook.service.UserService;
-import org.aspectj.lang.annotation.Before;
+import com.sachet.postBook.service.service_interface.UserService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,13 +12,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,7 +25,9 @@ import java.util.stream.IntStream;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 public class UserControllerTest {
-    public static String API_USER = "/api/1.0/users/save";
+    public static String API_USER_CREATE = "/user/api/1.0/signup";
+    private static final String API_USER_GET = "/user/api/1.0/";
+    private static final String API_USER_GET_AUTH = "/user/api/1.0/token";
 
     @Autowired
     TestRestTemplate testRestTemplate;
@@ -49,7 +50,27 @@ public class UserControllerTest {
     }
 
     public <T> ResponseEntity<T> postSignUp(Object request, Class<T> response){
-        return testRestTemplate.postForEntity(API_USER, request, response);
+        return testRestTemplate.postForEntity(API_USER_CREATE, request, response);
+    }
+
+    public <T> ResponseEntity<T> getUser(Long id, Class<T> response){
+        return testRestTemplate.getForEntity(API_USER_GET+id, response);
+    }
+
+    public <T> ResponseEntity<T> getUserWithAuthorizationHeaders(Long id, String authorizationToken, Class<T> response){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer "+authorizationToken);
+
+        HttpEntity<?> request = new HttpEntity<>(headers);
+        return testRestTemplate.exchange(API_USER_GET+id, HttpMethod.GET, request, response);
+    }
+
+    public <T> ResponseEntity<T> getUserFromAuthentication(String token, Class<T> response){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer "+token);
+
+        HttpEntity<?> request = new HttpEntity<>(headers);
+        return testRestTemplate.exchange(API_USER_GET_AUTH, HttpMethod.GET, request, response);
     }
 
     @Test
@@ -212,6 +233,42 @@ public class UserControllerTest {
 
         ResponseEntity<?> response = postSignUp(user, Object.class);
         Assertions.assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    public void getUser_withId_receiveUnauthorised(){
+
+        User user = createValidUser();
+        User userCreated = userService.save(user);
+
+        ResponseEntity<?> responseEntity = getUser(userCreated.getId(), ApiError.class);
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+
+    }
+
+    @Test
+    public void getUser_withId_tokenInHeader_receiveOk(){
+
+        User user = createValidUser();
+        ResponseEntity<?> responseEntity = postSignUp(user, Object.class);
+
+        user = userService.findUserByEmail(user.getEmail());
+
+        String token = (String) ((Map<String, Object>)responseEntity.getBody()).get("jsonWebToken");
+
+        ResponseEntity<?> responseEntity1 = getUserWithAuthorizationHeaders(user.getId(), token, Object.class);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity1.getStatusCode());
+    }
+
+    @Test
+    public void getUser_withToken_receiveOk(){
+        User user = createValidUser();
+        ResponseEntity<?> responseEntity = postSignUp(user, Object.class);
+
+        String token = (String) ((Map<String, Object>)responseEntity.getBody()).get("jsonWebToken");
+
+        ResponseEntity<?> responseEntity1 = getUserFromAuthentication(token, Object.class);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity1.getStatusCode());
     }
 
 }

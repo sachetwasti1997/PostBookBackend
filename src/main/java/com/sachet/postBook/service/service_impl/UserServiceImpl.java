@@ -1,7 +1,8 @@
-package com.sachet.postBook.service;
+package com.sachet.postBook.service.service_impl;
 
 import com.sachet.postBook.model.User;
 import com.sachet.postBook.repository.UserRepository;
+import com.sachet.postBook.service.service_interface.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -28,12 +29,17 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public User findUserById(Long id) {
-        return null;
+        return userRepository.findById(id).orElse(null);
     }
 
     @Override
     public List<User> findAll() {
         return userRepository.findAll();
+    }
+
+    @Override
+    public User findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Override

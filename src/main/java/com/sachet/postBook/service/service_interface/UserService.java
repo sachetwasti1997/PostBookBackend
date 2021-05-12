@@ -1,4 +1,4 @@
-package com.sachet.postBook.service;
+package com.sachet.postBook.service.service_interface;
 
 import com.sachet.postBook.model.User;
 
@@ -9,6 +9,8 @@ public interface UserService {
     User save(User user);
 
     User findUserById(Long id);
+
+    User findUserByEmail(String email);
 
     List<User> findAll();
 
