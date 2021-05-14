@@ -1,12 +1,18 @@
 package com.sachet.postBook.rest;
 
+import com.fasterxml.jackson.annotation.JsonView;
+import com.sachet.postBook.config.Views;
 import com.sachet.postBook.custom_error.ApiError;
+import com.sachet.postBook.dto.UserDto;
 import com.sachet.postBook.model.AuthenticationResponse;
 import com.sachet.postBook.model.MyUserDetails;
 import com.sachet.postBook.model.User;
 import com.sachet.postBook.service.service_interface.UserService;
 import com.sachet.postBook.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,7 +31,7 @@ import java.util.Map;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/user")
+@RequestMapping("/user/api/1.0")
 public class UserController {
 
     private final UserService userService;
@@ -37,7 +43,7 @@ public class UserController {
         this.jwtUtil = jwtUtil;
     }
 
-    @PostMapping("/api/1.0/signup")
+    @PostMapping("/signup")
     public ResponseEntity<?> createUsers(@Valid @RequestBody User user){
         User userSaved = userService.save(user);
         final MyUserDetails myUserDetails = new MyUserDetails(userSaved);
@@ -45,20 +51,26 @@ public class UserController {
         return new ResponseEntity<>(new AuthenticationResponse(token), HttpStatus.OK);
     }
 
-    @GetMapping("/api/1.0/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<?> getUser(@PathVariable(name = "id") Long id){
         User user = userService.findUserById(id);
         if (user == null){
             return new ResponseEntity<>(new ApiError(404, "User not found"), HttpStatus.NOT_FOUND);
         }
+        UserDto userDto = new UserDto(user);
+        return new ResponseEntity<>(userDto, HttpStatus.OK);
+    }
+
+    @GetMapping("/token")
+    public ResponseEntity<?> getUserFromToken(Authentication authentication, Principal principal){
+        String email = authentication.getName();
+        UserDto user = new UserDto(userService.findUserByEmail(email));
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
-    @GetMapping("/api/1.0/token")
-    public ResponseEntity<?> getUserFromToken(Authentication authentication, Principal principal){
-        String email = authentication.getName();
-        User user = userService.findUserByEmail(email);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+    @GetMapping("/users")
+    public Page<UserDto> getUsers(Authentication authentication, Pageable pageable){
+        return userService.getUsers(authentication, pageable).map(UserDto::new);
     }
 
     /**

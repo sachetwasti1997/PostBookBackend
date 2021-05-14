@@ -1,5 +1,7 @@
 package com.sachet.postBook.model;
 
+import com.fasterxml.jackson.annotation.JsonView;
+import com.sachet.postBook.config.Views;
 import com.sachet.postBook.custom_constraints.EmailConstraint;
 import com.sachet.postBook.custom_constraints.UserNameConstraint;
 
@@ -11,6 +13,8 @@ import javax.validation.constraints.Size;
 
 @Entity
 public class User extends BaseEntity{
+
+    private static final long serialVersionUUID = 4074374728582967483L;
 
     @NotNull(message = "User Name cannot be null")
     @Column(name = "user_name")
@@ -40,7 +44,17 @@ public class User extends BaseEntity{
                     "character. It must have more then five characters and less than 256 characters.")
     private String password;
 
+    @Size(max=255)
+    private String image;
+
     public User() {
+    }
+
+    public User(String userName, String displayName, String email, String password) {
+        this.userName = userName;
+        this.displayName = displayName;
+        this.email = email;
+        this.password = password;
     }
 
     public String getUserName() {
@@ -73,5 +87,22 @@ public class User extends BaseEntity{
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "userName='" + userName + '\'' +
+                ", displayName='" + displayName + '\'' +
+                ", email='" + email + '\'' +
+                '}';
     }
 }

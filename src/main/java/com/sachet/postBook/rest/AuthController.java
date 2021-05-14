@@ -1,5 +1,6 @@
 package com.sachet.postBook.rest;
 
+import com.sachet.postBook.custom_error.ApiError;
 import com.sachet.postBook.model.AuthenticationRequest;
 import com.sachet.postBook.model.AuthenticationResponse;
 import com.sachet.postBook.service.service_interface.UserService;
@@ -40,7 +41,7 @@ public class AuthController {
             final String token = jwtUtil.generateToken(userDetails);
             return new ResponseEntity<>(new AuthenticationResponse(token), HttpStatus.OK);
         }catch (Exception e){
-            return new ResponseEntity<>("Invalid Credentials", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new ApiError(404, "Invalid Credentials"), HttpStatus.NOT_FOUND);
         }
     }
 

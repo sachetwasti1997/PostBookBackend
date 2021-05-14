@@ -4,6 +4,10 @@ import com.sachet.postBook.model.User;
 import com.sachet.postBook.repository.UserRepository;
 import com.sachet.postBook.service.service_interface.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +39,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> findAll() {
         return userRepository.findAll();
+    }
+
+    @Override
+    public Page<User> getUsers(Authentication authentication, Pageable pageable) {
+        if (authentication != null){
+            return userRepository.findAllByEmailNot(authentication.getName(), pageable);
+        }
+        return userRepository.findAll(pageable);
     }
 
     @Override
