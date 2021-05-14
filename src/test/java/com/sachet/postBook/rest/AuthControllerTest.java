@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("auth-test")
+@ActiveProfiles("test")
 class AuthControllerTest {
 
     private static final String AUTH_API = "/auth/api/1.0/login";

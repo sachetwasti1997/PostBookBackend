@@ -70,6 +70,7 @@ public class UserController {
 
     @GetMapping("/users")
     public Page<UserDto> getUsers(Authentication authentication, Pageable pageable){
+        System.out.println(authentication);
         return userService.getUsers(authentication, pageable).map(UserDto::new);
     }
 
