@@ -497,7 +497,10 @@ public class UserControllerTest {
 
         User updatedUser = create_updatedUser(user);
 
+//        System.out.println(updatedUser);
+
         ResponseEntity<?> responseEntity = putUser(path, updatedUser, token, Object.class);
+        System.out.println(responseEntity.getBody());
         Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
     }
 
@@ -515,6 +518,25 @@ public class UserControllerTest {
         ResponseEntity<?> responseEntity = putUser(path, updatedUser, token, Object.class);
         User userInDB = userService.findUserById(user.getId());
         Assertions.assertEquals(userInDB.getDisplayName(), updatedUser.getDisplayName());
+    }
+
+    @Test
+    public void putUser_whenValidUserUpdatesEmailAndSomeOtherUserWithEmailAlreadyExists_receiveBadRequest(){
+        User user = createValidUser();
+        User anotherUser = createValidUser();
+        userService.save(user);
+        anotherUser.setEmail("sachet@gmail.com");
+        userService.save(anotherUser);
+        User updateRequest = create_updatedUser(user);
+        updateRequest.setEmail("sachet@gmail.com");
+
+        UserDetails userDetails = new MyUserDetails(user);
+        String token = jwtUtil.generateToken(userDetails);
+
+        String path = API_USER+user.getId().toString();
+
+        ResponseEntity<?> responseEntity = putUser(path, updateRequest, token, Object.class);
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
     }
 
     private User create_updatedUser(User user){

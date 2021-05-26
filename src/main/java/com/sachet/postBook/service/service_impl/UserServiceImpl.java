@@ -56,6 +56,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User update(Long id, User user) {
+        User userInDb = findUserById(id);
+        System.out.println(userInDb);
+        if (!userInDb.getEmail().equals(user.getEmail())){
+            User userWithEmailAlreadyExists = findUserByEmail(user.getEmail());
+            System.out.println(userWithEmailAlreadyExists);
+            if (userWithEmailAlreadyExists != null){
+                return null;
+            }
+        }
         return userRepository.save(user);
     }
 

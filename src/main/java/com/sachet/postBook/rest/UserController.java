@@ -79,6 +79,10 @@ public class UserController {
     @PreAuthorize("#id == authentication.principal.id")
     public ResponseEntity<?> updateUsers(@PathVariable Long id, @RequestBody User user){
         User userUpdated = userService.update(id, user);
+        if (userUpdated == null){
+            return new ResponseEntity<>(new ApiError(400,
+                    "Cannot Update as User with that mail already exists!"), HttpStatus.BAD_REQUEST);
+        }
         return new ResponseEntity<>(userUpdated, HttpStatus.OK);
     }
 
