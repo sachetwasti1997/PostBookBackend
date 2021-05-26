@@ -8,10 +8,12 @@ import java.util.Collection;
 
 public class MyUserDetails implements UserDetails {
 
-    private String userName;
-    private String password;
+    private final Long id;
+    private final String userName;
+    private final String password;
 
     public MyUserDetails(User user) {
+        this.id = user.getId();
         this.userName = user.getEmail();
         this.password = user.getPassword();
     }
@@ -19,6 +21,14 @@ public class MyUserDetails implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return null;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getUserName() {
+        return userName;
     }
 
     @Override
@@ -49,5 +59,14 @@ public class MyUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "MyUserDetails{" +
+                "id=" + id +
+                ", userName='" + userName + '\'' +
+                ", password='" + password + '\'' +
+                '}';
     }
 }

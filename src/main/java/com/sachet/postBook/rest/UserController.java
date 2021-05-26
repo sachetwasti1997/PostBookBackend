@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.validation.BindingResult;
@@ -63,6 +64,7 @@ public class UserController {
 
     @GetMapping("/token")
     public ResponseEntity<?> getUserFromToken(Authentication authentication, Principal principal){
+        System.out.println(authentication.getPrincipal());
         String email = authentication.getName();
         UserDto user = new UserDto(userService.findUserByEmail(email));
         return new ResponseEntity<>(user, HttpStatus.OK);
@@ -71,6 +73,13 @@ public class UserController {
     @GetMapping("/users")
     public Page<UserDto> getUsers(Authentication authentication, Pageable pageable){
         return userService.getUsers(authentication, pageable).map(UserDto::new);
+    }
+
+    @PutMapping("/{id:[0-9]+}")
+    @PreAuthorize("#id == authentication.principal.id")
+    public ResponseEntity<?> updateUsers(@PathVariable Long id, @RequestBody User user){
+        User userUpdated = userService.update(id, user);
+        return new ResponseEntity<>(userUpdated, HttpStatus.OK);
     }
 
     /**

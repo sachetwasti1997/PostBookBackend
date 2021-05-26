@@ -43,6 +43,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 logger.info(userName);
             }catch (Exception e){
                 System.out.println("Unable to process JWT Token"+ Arrays.toString(e.getStackTrace()));
+                throw new ServletException(e);
             }
         }else {
             logger.warn("JWT TOKEN doesn't begin with Bearer String");

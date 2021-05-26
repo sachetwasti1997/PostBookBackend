@@ -2,10 +2,11 @@ package com.sachet.postBook;
 
 import com.sachet.postBook.custom_error.ApiError;
 import com.sachet.postBook.model.AuthenticationRequest;
-import com.sachet.postBook.model.AuthenticationResponse;
 import com.sachet.postBook.model.MyUserDetails;
 import com.sachet.postBook.model.User;
+import com.sachet.postBook.service.MyUserDetailsService;
 import com.sachet.postBook.service.service_interface.UserService;
+import com.sachet.postBook.util.JwtUtil;
 import com.sachet.postBook.utilities.TestPage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,10 +17,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,7 +31,7 @@ import java.util.stream.IntStream;
 @ActiveProfiles("test")
 public class UserControllerTest {
     public static String API_USER_CREATE = "/user/api/1.0/signup";
-    private static final String API_USER_GET = "/user/api/1.0/";
+    private static final String API_USER = "/user/api/1.0/";
     private static final String API_USER_GET_AUTH = "/user/api/1.0/token";
 
     @Autowired
@@ -38,6 +39,12 @@ public class UserControllerTest {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    MyUserDetailsService myUserDetailsService;
+
+    @Autowired
+    JwtUtil jwtUtil;
 
     private User createValidUser(){
         User user = new User();
@@ -58,7 +65,7 @@ public class UserControllerTest {
     }
 
     public <T> ResponseEntity<T> getUser(Long id, Class<T> response){
-        return testRestTemplate.getForEntity(API_USER_GET+id, response);
+        return testRestTemplate.getForEntity(API_USER +id, response);
     }
 
     public <T> ResponseEntity<T> getUserWithAuthorizationHeaders(Long id, String authorizationToken, Class<T> response){
@@ -66,7 +73,7 @@ public class UserControllerTest {
         headers.add("Authorization", "Bearer "+authorizationToken);
 
         HttpEntity<?> request = new HttpEntity<>(headers);
-        return testRestTemplate.exchange(API_USER_GET+id, HttpMethod.GET, request, response);
+        return testRestTemplate.exchange(API_USER +id, HttpMethod.GET, request, response);
     }
 
     public <T> ResponseEntity<T> getUserFromAuthentication(String token, Class<T> response){
@@ -77,9 +84,19 @@ public class UserControllerTest {
         return testRestTemplate.exchange(API_USER_GET_AUTH, HttpMethod.GET, request, response);
     }
 
+    public <T> ResponseEntity<T> putUser(String path, User reqObj, String token, Class<T> response){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer "+token);
+
+        HttpEntity<?> request = new HttpEntity<>(reqObj, headers);
+        return testRestTemplate.exchange(path, HttpMethod.PUT, request, response);
+    }
+
     @Test
     public void postUser_userValid_receiveOk(){
         User user = createValidUser();
+        user.setEmail("sachet@gmail.com");
+        user.setPassword("Wasti786@");
 
         ResponseEntity<?> response = postSignUp(user, Object.class);
         Assertions.assertEquals(response.getStatusCode(), HttpStatus.OK);
@@ -287,7 +304,7 @@ public class UserControllerTest {
     @Test
     public void getUsers_whenThereAreNoUsersInDB_receivePageWithZeroUsers(){
         ResponseEntity<TestPage<Object>> responseEntity = testRestTemplate.exchange(
-                API_USER_GET + "users", HttpMethod.GET, null,
+                API_USER + "users", HttpMethod.GET, null,
                 new ParameterizedTypeReference<TestPage<Object>>() {}
         );
         Assertions.assertEquals(0, responseEntity.getBody().getTotalElements());
@@ -297,7 +314,7 @@ public class UserControllerTest {
     public void getUsers_whenThereIsAUserInDB_receivePageWithOneUser(){
         User user = userService.save(createValidUser());
         ResponseEntity<TestPage<Object>> responseEntity = testRestTemplate.exchange(
-                API_USER_GET + "users", HttpMethod.GET, null,
+                API_USER + "users", HttpMethod.GET, null,
                 new ParameterizedTypeReference<TestPage<Object>>() {}
         );
         System.out.println(responseEntity.getBody());
@@ -316,17 +333,26 @@ public class UserControllerTest {
         ResponseEntity<?> responseEntity = getJsonToken_LoginSuccessful(userCreated.getEmail(), "Wasti786@");
         String token = (String) ((Map<String, Object>)responseEntity.getBody()).get("jsonWebToken");
 
+        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage(
+                API_USER+"users",
+                token
+        );
+
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer "+token);
 
         HttpEntity<?> request = new HttpEntity<>(headers);
 
-        ResponseEntity<TestPage<Map<String, Object>>> responseEntity1 = testRestTemplate.exchange(
-                API_USER_GET + "users", HttpMethod.GET, request,
-                new ParameterizedTypeReference<TestPage<Map<String, Object>>>() {}
+        ResponseEntity<Map<String, Object>> map = testRestTemplate.exchange(
+                API_USER+"users",
+                HttpMethod.GET,
+                request,
+                new ParameterizedTypeReference<Map<String, Object>>() {}
         );
-        Map<String, Object> map = responseEntity1.getBody().getContent().get(0);
-        Assertions.assertFalse(map.containsKey("password"));
+
+        System.out.println(map.getBody().get("content"));
+        Map<String, Object> map2 = (Map<String, Object>) ((List<Object>)map.getBody().get("content")).get(0);
+        Assertions.assertFalse(map2.containsKey("password"));
     }
 
     @Test
@@ -338,8 +364,10 @@ public class UserControllerTest {
         ResponseEntity<?> responseEntity = getJsonToken_LoginSuccessful(userCreated.getEmail(), "Wasti786@");
         String token = (String) ((Map<String, Object>)responseEntity.getBody()).get("jsonWebToken");
 
-        String path = API_USER_GET+"users?page=0&size=3";
+        String path = API_USER +"users?page=0&size=3";
         ResponseEntity<TestPage<Object>> responseEntity1 = receivePage(path, token);
+
+        System.out.println(responseEntity1.getBody().getContent());
 
         Assertions.assertEquals(3, responseEntity1.getBody().getContent().size());
     }
@@ -359,7 +387,7 @@ public class UserControllerTest {
         ResponseEntity<?> responseEntity = getJsonToken_LoginSuccessful(userCreated.getEmail(), "Wasti786@");
         String token = (String) ((Map<String, Object>)responseEntity.getBody()).get("jsonWebToken");
 
-        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage(API_USER_GET+"users", token);
+        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage(API_USER +"users", token);
         Assertions.assertEquals(10, responseEntity1.getBody().getContent().size());
     }
 
@@ -372,7 +400,7 @@ public class UserControllerTest {
         ResponseEntity<?> responseEntity = getJsonToken_LoginSuccessful(userCreated.getEmail(), "Wasti786@");
         String token = (String) ((Map<String, Object>)responseEntity.getBody()).get("jsonWebToken");
 
-        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage100(API_USER_GET+"users?size=500", token);
+        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage100(API_USER +"users?size=500", token);
         Assertions.assertEquals(100, responseEntity1.getBody().getContent().size());
     }
 
@@ -385,7 +413,7 @@ public class UserControllerTest {
         ResponseEntity<?> responseEntity = getJsonToken_LoginSuccessful(userCreated.getEmail(), "Wasti786@");
         String token = (String) ((Map<String, Object>)responseEntity.getBody()).get("jsonWebToken");
 
-        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage(API_USER_GET+"users?size=-500", token);
+        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage(API_USER +"users?size=-500", token);
         Assertions.assertEquals(10, responseEntity1.getBody().getContent().size());
     }
 //
@@ -398,8 +426,107 @@ public class UserControllerTest {
         ResponseEntity<?> responseEntity = getJsonToken_LoginSuccessful(userCreated.getEmail(), "Wasti786@");
         String token = (String) ((Map<String, Object>)responseEntity.getBody()).get("jsonWebToken");
 
-        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage(API_USER_GET+"users?page=-500", token);
+        ResponseEntity<TestPage<Object>> responseEntity1 = receivePage(API_USER +"users?page=-500", token);
         Assertions.assertEquals(0, responseEntity1.getBody().getNumber());
+    }
+
+    @Test
+    public void putUser_whenUnauthorisedUserSendsRequest_receiveForbidden(){
+        String path = API_USER+"/1234";
+        ResponseEntity<?> responseEntity = testRestTemplate.exchange(path, HttpMethod.PUT, null,
+                Object.class);
+        System.out.println(responseEntity);
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void putUser_whenAuthorisedUserUpdatesAnotherUser_receiveForbidden(){
+        User user = createValidUser();
+        userService.save(user);
+        UserDetails userDetails = new MyUserDetails(user);
+        String token = jwtUtil.generateToken(userDetails);
+        String path = API_USER+"/1519";
+
+        User user1 = create_updatedUser(user);
+
+        user1.setId(1591L);
+
+        ResponseEntity<?> responseEntity = putUser(path, user1, token, Object.class);
+
+        System.out.println(responseEntity.getBody());
+
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void putUser_whenUnauthorisedUserSendsRequest_receiveApiError(){
+        String path = API_USER+"/1234";
+        ResponseEntity<?> responseEntity = testRestTemplate.exchange(path, HttpMethod.PUT, null,
+                Object.class);
+        System.out.println(responseEntity.getBody());
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void putUser_whenAuthorisedUserUpdatesAnotherUser_receiveApiError(){
+        User user = createValidUser();
+        userService.save(user);
+        UserDetails userDetails = new MyUserDetails(user);
+        String token = jwtUtil.generateToken(userDetails);
+        String path = API_USER+"/1519";
+
+        User user1 = create_updatedUser(user);
+
+        ResponseEntity<?> responseEntity = putUser(path, user1, token, Object.class);
+
+        System.out.println(responseEntity.getBody());
+
+        String message = (String)((Map<String, Object>)responseEntity.getBody()).get("message");
+
+        Assertions.assertNotNull(message);
+    }
+
+    @Test
+    public void putUser_whenValidUserSendsRequest_receiveOk(){
+        User user = createValidUser();
+        user.setUserName("sachet_wasti");
+        userService.save(user);
+        UserDetails userDetails = new MyUserDetails(user);
+        String token = jwtUtil.generateToken(userDetails);
+        String path = API_USER+user.getId().toString();
+
+        User updatedUser = create_updatedUser(user);
+
+        ResponseEntity<?> responseEntity = putUser(path, updatedUser, token, Object.class);
+        Assertions.assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+    }
+
+    @Test
+    public void putUser_whenValidUserSendsRequest_receiveUpdatedUser(){
+        User user = createValidUser();
+        user.setUserName("sachet_wasti");
+        userService.save(user);
+        UserDetails userDetails = new MyUserDetails(user);
+        String token = jwtUtil.generateToken(userDetails);
+        String path = API_USER+user.getId().toString();
+
+        User updatedUser = create_updatedUser(user);
+
+        ResponseEntity<?> responseEntity = putUser(path, updatedUser, token, Object.class);
+        User userInDB = userService.findUserById(user.getId());
+        Assertions.assertEquals(userInDB.getDisplayName(), updatedUser.getDisplayName());
+    }
+
+    private User create_updatedUser(User user){
+        User user1 = new User();
+        user1.setId(user.getId());
+        user1.setUserName(user.getUserName());
+        user1.setPassword(user.getPassword());
+        user1.setEmail(user.getEmail());
+        user1.setDisplayName("sachet_unique");
+        user1.setImage(user.getImage());
+
+        return user1;
     }
 
     private ResponseEntity<TestPage<Object>> receivePage(String path, String token){

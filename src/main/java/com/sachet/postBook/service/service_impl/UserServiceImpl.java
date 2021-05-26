@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User update(Long id, User user) {
-        return null;
+        return userRepository.save(user);
     }
 
     @Override

@@ -1,8 +1,11 @@
 package com.sachet.postBook.custom_error;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Date;
 import java.util.Map;
 
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
 public class ApiError {
 
     private long timeStamp = new Date().getTime();
@@ -12,6 +15,10 @@ public class ApiError {
     private String message;
 
     private Map<String , String > validationErrors;
+
+    public ApiError(String message) {
+        this.message = message;
+    }
 
     public ApiError(int statusCode, String message) {
         this.statusCode = statusCode;
